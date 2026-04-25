@@ -1,0 +1,1511 @@
+{
+  "name": "Airline Customer Support System - Group 5",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3392,
+        768
+      ],
+      "id": "66d51c1e-a8c6-4bcc-8757-11f3d14d2b6c",
+      "name": "Extract SAFE / UNSAFE"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2864,
+        768
+      ],
+      "id": "29d4bfbf-1fda-4591-a315-bd55581fd458",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Given the user request below, classify it as either being about `Need SQL`, `Non SQL`, or `Other`.\nIf the user request requires some data to be fetched from the database tables then classify it as `Need SQL`.\nIf the user request does not requires any data to be fetched from the database but instead need some general information about airline and FAQs then classify it as `Non SQL`.\nIf the user request looks out of the context and is not related to flights or the airline then classify it as `Other`.\n\nThe database has following table:\n1. flights (id, flight_no, airline_code, airline_name, origin, destination, departure_scheduled, arrival_scheduled, departure_date, departure_time, arrival_date, arrival_time, status, delay_minutes, delay_reason, terminal, gate, aircraft_type, seats_total, seats_booked, fare_inr)\n\nRespond with EXACTLY one of:\nNeed SQL\nNon SQL\nOther\n\nDo not add anything else.\n\nRequest: {{ $json.message }}\nClassification:",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2832,
+        560
+      ],
+      "id": "7124807d-8a53-49bb-a94c-b6c831d656ed",
+      "name": "Classifier LLM Chain"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Need SQL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bed7cc8c-bd3f-47bc-8b71-a2cd64a2e768"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Need SQL"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "747b0d0c-670e-48bd-9af1-be22f3701b0e",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Other",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Other"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3d366a5e-0d01-407f-8eec-65ca1ae9a747",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Non SQL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Non SQL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -2496,
+        544
+      ],
+      "id": "5cffffe8-5ff3-4bf9-93fb-14bfc0793633",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2192,
+        528
+      ],
+      "id": "e608afff-317c-4fbd-ac58-04d3acfcc950",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"sql\": \"SELECT * FROM FLIGHTS LIMIT 10\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -2032,
+        528
+      ],
+      "id": "fc4daf5b-20cc-46f6-98cf-d4062e317e67",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1840,
+        528
+      ],
+      "id": "dbf47bde-e0a8-46c9-9a44-15a83a76213d",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"safetyFlag\": \"UNSAFE\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1664,
+        528
+      ],
+      "id": "fb9c1e9b-adf2-456e-bac1-16109ecc807d",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ff9ddae9-4de5-4ee8-9ad0-d51bc427031c",
+              "leftValue": "={{ $json.output.safetyFlag }}",
+              "rightValue": "SAFE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1440,
+        336
+      ],
+      "id": "f07ff897-99d8-4875-a9aa-0d484de25b31",
+      "name": "Is SQL query SAFE ?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a SQL safety checker. Review the SQL query given below and classify it as SAFE (read-only) or UNSAFE (modifies or affects data/schema).\nMark SAFE only if it’s a single SELECT or WITH…SELECT statement used to fetch data.\nMark UNSAFE if it contains INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE, transactions, or multiple statements.\n\nAnswer only with one word.\n\nSQL query: {{ $json.output.sql }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1792,
+        336
+      ],
+      "id": "27e9e31e-4500-4510-9d33-d1edba277b6c",
+      "name": "SQL Guardrails"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a PostgreSQL expert. Given an input request, return a syntactically correct PostgreSQL query to run.\nUnless the user specifies in the question a specific number of examples to obtain, query for at most 10 results using the LIMIT clause as per PostgreSQL. You can order the results to return the most informative data in the database.\nNever query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap each column name in double quotes (\") to denote them as delimited identifiers.\nPay attention to use only the column names you can see in the table below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.\nDo not return any new columns nor perform aggregation on columns. Return only the columns present in tables and further aggregations will be done by LLM in later steps.\nThe databse currently have flights data table that stores detailed information about each flight’s schedule, operations, and performance metrics. It includes identifiers like flight ID and flight number, airline details, origin and destination airports, and scheduled timestamps for departures and arrivals. The system automatically derives date and time fields from those timestamps for easier querying. It also captures operational attributes such as flight status, delay duration and reason, terminal and gate assignments, aircraft type, total and booked seats, and the fare in INR.\n\nUse the following format:\n\nRequest: Request here\nSQLQuery: Generated SQL Query here\n\nOnly use the following table:\n1. flights (id, flight_no, airline_code, airline_name, origin, destination, departure_scheduled, arrival_scheduled, departure_date, departure_time, arrival_date, arrival_time, status, delay_minutes, delay_reason, terminal, gate, aircraft_type, seats_total, seats_booked, fare_inr)\n\nThe origin and destination fields contain iata codes.\n\nUse the below CSV to map country names to their iata:\niata,airport_name,city,country,timezone\nDEL,Indira Gandhi Intl,New Delhi,India,Asia/Kolkata\nBOM,Chhatrapati Shivaji Intl,Mumbai,India,Asia/Kolkata\nBLR,Kempegowda Intl,Bengaluru,India,Asia/Kolkata\nHYD,Rajiv Gandhi Intl,Hyderabad,India,Asia/Kolkata\nMAA,Chennai Intl,Chennai,India,Asia/Kolkata\nCCU,Netaji Subhas Chandra Bose Intl,Kolkata,India,Asia/Kolkata\nPNQ,Pune Intl,Pune,India,Asia/Kolkata\nGOI,Manohar Intl,Goa,India,Asia/Kolkata\nCOK,Cochin Intl,Kochi,India,Asia/Kolkata\nAMD,Sardar Vallabhbhai Patel Intl,Ahmedabad,India,Asia/Kolkata\nIXC,Chandigarh Intl,Chandigarh,India,Asia/Kolkata\nNAG,Dr. Babasaheb Ambedkar Intl,Nagpur,India,Asia/Kolkata\nJAI,Jaipur Intl,Jaipur,India,Asia/Kolkata\nVNS,Lal Bahadur Shastri,Varanasi,India,Asia/Kolkata\nPAT,Jay Prakash Narayan,Patna,India,Asia/Kolkata\n\n\nBefore generating SQL:\n\n1. Convert city names to IATA airport codes:\n   Mumbai → BOM\n   Hyderabad → HYD\n   Delhi → DEL\n   Bangalore/Bengaluru → BLR\n   Chennai → MAA\n   Pune → PNQ\n\n2. Correct spelling mistakes in city names before mapping.\n\n3. Always use uppercase IATA codes in SQL.\nIf the year is not provided in the request then use 2025.\n\nRequest: {{ $('Webhook').item.json.body.chatInput }}\nSQLQuery:",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2144,
+        336
+      ],
+      "id": "1e1bb000-80b5-4387-8b2a-a81bc4c31afa",
+      "name": "SQL Query Chain"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a helpful assistant. You have access to PostgreSQL Tool to execute SQL queries and get the response.\nProvide a response to the below user query based on the data fetched from PostgreSQL database.\n\nIf you don't know the answer that is if the data fetched is not enough to handle the user query then say \"Couldn't find the relevant data in database.\"\n\nUser query: {{ $('Webhook').item.json.body.chatInput }}\n\nSQL query: {{ $('SQL Query Chain').item.json.output.sql }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1104,
+        128
+      ],
+      "id": "d198f717-c90b-4174-9a8c-6341d1dca775",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1168,
+        320
+      ],
+      "id": "c47edf52-3ae9-4aee-b751-365055471362",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $('SQL Query Chain').item.json.output.sql }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -912,
+        320
+      ],
+      "id": "81d4f69f-7d1f-454b-8072-b145642dae68",
+      "name": "Execute a SQL query in Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "DAS9ye6PU2IULrdx",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -496,
+        128
+      ],
+      "id": "391cb46f-0466-41cc-93b2-430512b3db71",
+      "name": "Extract SAFE / UNSAFE1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8ceec4b9-dca6-4b77-9421-c8a45cddd977",
+              "leftValue": "={{ $json.safe }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3184,
+        768
+      ],
+      "id": "2f27ac6e-54de-4796-bba5-a87f97a303be",
+      "name": "Is Input SAFE ?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8ceec4b9-dca6-4b77-9421-c8a45cddd977",
+              "leftValue": "={{ $json.safe }}",
+              "rightValue": "SAFE",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -288,
+        128
+      ],
+      "id": "10b10257-8269-4cd1-be6e-4267f8d23009",
+      "name": "Is Output SAFE ?"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2272,
+        1168
+      ],
+      "id": "81b922cf-cbd7-4536-a97e-dcd8a55f17d8",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "options": {}
+      },
+      "id": "51c1f338-fa49-4f99-9427-54fe3bde5bfc",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        -3088,
+        336
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkSize": 400,
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "id": "a7ff4cb1-d407-49cc-bf4b-17854d98ea4e",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        -3136,
+        512
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "fileName": "={{ $json.name }}"
+        }
+      },
+      "id": "86e2f289-d141-441e-9784-ee1ece7082dc",
+      "name": "Download File From Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -3456,
+        112
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "VwySUSYbl0CuVADl",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "10YF0p7WH1pD8d3GTWYOVHq0utCg4qJEW",
+          "mode": "list",
+          "cachedResultName": "AIRLINE_DOCS",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/10YF0p7WH1pD8d3GTWYOVHq0utCg4qJEW"
+        },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "id": "7d8e5e5b-9965-49dd-be47-10e0cdb0fa47",
+      "name": "Google Drive File Updated",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -3712,
+        240
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "VwySUSYbl0CuVADl",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "17vcILVzz-cFqEZNW4s8Qaa5aQnvHM3WS",
+          "mode": "list",
+          "cachedResultName": "airline_docs",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/17vcILVzz-cFqEZNW4s8Qaa5aQnvHM3WS"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "id": "62b77d80-3b4c-410e-9fd6-f3f08f206524",
+      "name": "Google Drive File Created",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -3712,
+        16
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "VwySUSYbl0CuVADl",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -3312,
+        320
+      ],
+      "id": "13ea6f63-e67d-47e1-9db9-dd8042888d79",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "airline-knowledge",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "a79aef46-8ad7-4e8d-abbb-7ff18ee63a15",
+      "name": "Pinecone Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        -3232,
+        112
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "pineconeApi": {
+          "id": "GW99KGWxXvlsNNzg",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2064,
+        1360
+      ],
+      "id": "78a4ca4d-fa1b-4af1-a8f2-10ecf072c08f",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "xgfxl5EuEgtbZSKP",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Retrieve information regarding Airline Info and FAQs from the Knowledge base",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "airline-knowledge",
+          "mode": "list",
+          "cachedResultName": "airline-knowledge"
+        },
+        "topK": 3,
+        "includeDocumentMetadata": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -2000,
+        1200
+      ],
+      "id": "2e008da5-fc48-4fc0-b50b-50263949677a",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "GW99KGWxXvlsNNzg",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a helpful Support Assistant designed to answer customer queries based on the Knowledge Base containing Airline Info and FAQs.\n\nYou have access to the Pinecone Vector Store tool. Use it to retreive relevant information from the provided document and provide a concise, accurate, and informative answer to the user request given at the end.\n\nIf the answer cannot be found in the provided document, respond with \"I couldn’t find this information in the Airline documentation. Please reach out to contact.support@skywings.com\"\n\nDo not invent features or details outside the knowledge base.  \nIf asked about unrelated topics, respond: \"I can only answer questions about SkyWings Airline.\"\n\nUser request: {{ $('Webhook').item.json.body.chatInput }}",
+        "options": {}
+      },
+      "id": "ac88abe4-2b4e-46b0-ad46-f07277c25b7c",
+      "name": "RAG Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -2144,
+        960
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        960
+      ],
+      "id": "2603dd7f-b52e-46a3-be61-5664b893415c",
+      "name": "Extract SAFE / UNSAFE2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8ceec4b9-dca6-4b77-9421-c8a45cddd977",
+              "leftValue": "={{ $json.safe }}",
+              "rightValue": "SAFE",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1328,
+        960
+      ],
+      "id": "77e6b515-d4c8-48e8-ac5c-9bd87686403f",
+      "name": "Is Output SAFE ?1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/guardrail",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.body.chatInput }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3600,
+        768
+      ],
+      "id": "ad38aa73-9431-45df-b96e-1cd0e2a1e697",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/guardrail",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -752,
+        128
+      ],
+      "id": "624fdfab-bd56-402c-b9d5-e8b74b53410c",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/guardrail",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1792,
+        960
+      ],
+      "id": "24a95411-dcb4-44c4-9ec4-90891357f9c3",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -864,
+        864
+      ],
+      "id": "f43d6e59-6483-4ea8-b6b8-a98f89923004",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "airline-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3872,
+        752
+      ],
+      "id": "b10d68a1-5a72-4be6-8c5b-4531950efc70",
+      "name": "Webhook",
+      "webhookId": "9705b4cc-43c7-4963-9163-2f3c5d1073ff"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1136,
+        720
+      ],
+      "id": "41fecd52-db9a-4255-a3fe-7c8987507ab1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "=\"Request blocked due to unsafe content.\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1168,
+        1120
+      ],
+      "id": "2f53ab04-82f0-4ef1-ab1d-0ab875b97496",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "=\"Request blocked due to unsafe content.\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2976,
+        912
+      ],
+      "id": "fb05395e-9b7f-409f-bf7c-4108f683db36",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "=\"Please give relevant query related to airline.\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2176,
+        656
+      ],
+      "id": "52b2ade4-2ccb-4fb4-889b-6188ab4f7f3d",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "=\"Request blocked due to unsafe content.\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1200,
+        480
+      ],
+      "id": "d6d2fe25-8cf5-486f-8472-52731ddcd97c",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "=\"Request blocked due to unsafe content.\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        256
+      ],
+      "id": "3356d5ab-aa20-40a2-a195-156991afeb12",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e439920-932e-48f6-b3f8-47d3702e3309",
+              "name": "output",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        32
+      ],
+      "id": "d7c56bf2-a4d7-4c7d-9607-bbcea906e899",
+      "name": "Edit Fields6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract SAFE / UNSAFE": {
+      "main": [
+        [
+          {
+            "node": "Is Input SAFE ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classifier LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classifier LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "SQL Query Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RAG Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SQL Query Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "SQL Query Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SQL Guardrails",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "SQL Guardrails",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is SQL query SAFE ?": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Guardrails": {
+      "main": [
+        [
+          {
+            "node": "Is SQL query SAFE ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Query Chain": {
+      "main": [
+        [
+          {
+            "node": "SQL Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract SAFE / UNSAFE1": {
+      "main": [
+        [
+          {
+            "node": "Is Output SAFE ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Input SAFE ?": {
+      "main": [
+        [
+          {
+            "node": "Classifier LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Output SAFE ?": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File From Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive File Updated": {
+      "main": [
+        [
+          {
+            "node": "Download File From Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive File Created": {
+      "main": [
+        [
+          {
+            "node": "Download File From Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract SAFE / UNSAFE2": {
+      "main": [
+        [
+          {
+            "node": "Is Output SAFE ?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Output SAFE ?1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract SAFE / UNSAFE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Extract SAFE / UNSAFE1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Extract SAFE / UNSAFE2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8db1301b-bc68-4918-a99b-be437b4674d6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3fd38669b52e42c3340bc631702f1181bbcf03ab62a44b85e8b9b3680ce78b15"
+  },
+  "id": "qunqw5i31dXZtZYM",
+  "tags": []
+}
